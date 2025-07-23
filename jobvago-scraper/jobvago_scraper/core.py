@@ -1,27 +1,28 @@
 from abc import ABC, abstractmethod
-from typing import List
-from playwright.async_api import Page
+from typing import AsyncGenerator
+from playwright.async_api import Browser
+
 from .models import JobItem
 
 class ScraperStrategy(ABC):
     """
-    Abstract Base Class (Interface) for all scraper strategies.
-    This defines the 'contract' that every scraper must follow.
+    Defines the contract for a self-sufficient scraper.
+    Each scraper is responsible for its own pagination logic.
     """
 
     def __init__(self, site_name: str):
         self.site_name = site_name
 
     @abstractmethod
-    async def scrape(self, page: Page) -> List[JobItem]:
+    async def discover_jobs(self, browser: Browser) -> AsyncGenerator[JobItem, None]:
         """
-        The main method to perform scraping on a given Playwright page.
+        An async generator that discovers and yields JobItem objects.
 
         Args:
-            page: A Playwright Page object that has navigated to the target URL.
+            browser: A Playwright Browser instance that the scraper can use
+                     to create its own pages.
 
-        Returns:
-            A list of JobItem objects, each representing a scraped job posting.
-            Returns an empty list if no jobs are found.
+        Yields:
+            JobItem: A new job posting as it is discovered.
         """
-        pass
+        yield
