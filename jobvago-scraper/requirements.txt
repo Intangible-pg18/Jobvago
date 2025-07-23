@@ -1,0 +1,8 @@
+# Browser automation library
+playwright
+
+# For data validation and settings management
+pydantic
+
+# For loading environment variables from a .env file (for local development)
+python-dotenv

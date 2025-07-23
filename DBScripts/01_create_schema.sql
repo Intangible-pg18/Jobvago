@@ -1,0 +1,68 @@
+CREATE TABLE Sources (
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(100) NOT NULL UNIQUE
+);
+GO
+
+CREATE TABLE Companies (
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(255) NOT NULL UNIQUE,
+    WebsiteURL NVARCHAR(2048) NULL
+);
+GO
+
+CREATE TABLE Locations (
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(100) NOT NULL UNIQUE
+);
+GO
+
+CREATE TABLE Skills (
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(100) NOT NULL UNIQUE
+);
+GO
+
+
+
+CREATE TABLE Jobs (
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    JobTitle NVARCHAR(255) NOT NULL,
+    Description NVARCHAR(MAX) NULL,
+    MinSalary DECIMAL(18, 2) NULL,
+    MaxSalary DECIMAL(18, 2) NULL,
+    Currency NVARCHAR(10) NULL,
+    OriginalUrl NVARCHAR(450) NOT NULL UNIQUE, 
+    PostedAt DATETIME2 NULL,
+    IsRemote BIT NOT NULL DEFAULT 0,
+    CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+    LastSeenAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+
+    -- Foreign Key constraints
+    CompanyID INT NOT NULL,
+    SourceID INT NOT NULL,
+    CONSTRAINT FK_Jobs_Companies FOREIGN KEY (CompanyID) REFERENCES Companies(ID),
+    CONSTRAINT FK_Jobs_Sources FOREIGN KEY (SourceID) REFERENCES Sources(ID)
+);
+GO
+
+
+CREATE TABLE JobLocations (
+    JobID INT NOT NULL,
+    LocationID INT NOT NULL,
+    CONSTRAINT PK_JobLocations PRIMARY KEY (JobID, LocationID),
+    CONSTRAINT FK_JobLocations_Jobs FOREIGN KEY (JobID) REFERENCES Jobs(ID),
+    CONSTRAINT FK_JobLocations_Locations FOREIGN KEY (LocationID) REFERENCES Locations(ID)
+);
+GO
+
+CREATE TABLE JobSkills (
+    JobID INT NOT NULL,
+    SkillID INT NOT NULL,
+    CONSTRAINT PK_JobSkills PRIMARY KEY (JobID, SkillID),
+    CONSTRAINT FK_JobSkills_Jobs FOREIGN KEY (JobID) REFERENCES Jobs(ID),
+    CONSTRAINT FK_JobSkills_Skills FOREIGN KEY (SkillID) REFERENCES Skills(ID)
+);
+GO
+
+PRINT 'Database schema created successfully!';
