@@ -17,6 +17,9 @@ ENV/
 ehthumbs.db
 Thumbs.db
 
+# Azurite local storage emulator files
+__azurite*
+
 # IDE / Editor specific files
 .vscode/
 .idea/
