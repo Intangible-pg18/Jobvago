@@ -8,7 +8,7 @@ SITES_CONFIG = {
     "internshala": {
         "scraper_class_name": "InternshalaScraper",
         "module_path": "jobvago_scraper.spiders.internshala",
-        "safety_page_limit": 3,
+        "safety_page_limit": 500,
     },
     "naukri": {
         "scraper_class_name": "NaukriScraper",
