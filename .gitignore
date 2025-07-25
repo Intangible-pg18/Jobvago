@@ -20,6 +20,9 @@ Thumbs.db
 # Azurite local storage emulator files
 __azurite*
 
+# Azure Functions local settings
+local.settings.json
+
 # IDE / Editor specific files
 .vscode/
 .idea/
