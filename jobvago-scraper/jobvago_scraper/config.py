@@ -8,7 +8,7 @@ SITES_CONFIG = {
     "internshala": {
         "scraper_class_name": "InternshalaScraper",
         "module_path": "jobvago_scraper.spiders.internshala",
-        "safety_page_limit": 500,
+        "safety_page_limit": 3,
     },
     "naukri": {
         "scraper_class_name": "NaukriScraper",
@@ -16,4 +16,8 @@ SITES_CONFIG = {
         # A future naukri scraper might not have a page limit, maybe a "max clicks" limit.
         # The flexible config allows for this.
     }
+}
+
+SERVICE_BUS_CONFIG = {
+    "queue_name": "new-jobs-queue"
 }

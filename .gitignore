@@ -21,7 +21,7 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Secrets - we will create this file later
+# Secrets
 .env
 
 # Build results
