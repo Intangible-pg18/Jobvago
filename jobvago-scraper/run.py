@@ -3,6 +3,7 @@ import json
 from azure.servicebus.aio import ServiceBusClient
 from azure.servicebus import ServiceBusMessage
 from azure.identity.aio import DefaultAzureCredential
+from dotenv import load_dotenv
 
 import argparse
 import asyncio
@@ -15,6 +16,8 @@ from jobvago_scraper.config import SITES_CONFIG
 from jobvago_scraper.config import SITES_CONFIG, SERVICE_BUS_CONFIG
 from jobvago_scraper.core import ScraperStrategy
 from jobvago_scraper.models import JobItem
+
+load_dotenv()
 
 def scraper_factory(site_name: str) -> ScraperStrategy:
     """
