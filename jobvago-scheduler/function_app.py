@@ -39,7 +39,7 @@ except ImportError as e:
 
 app = func.FunctionApp()
 
-@app.timer_trigger(schedule="0 0 */6 * * *", arg_name="myTimer", run_on_startup=True,
+@app.timer_trigger(schedule="0 0 */12 * * *", arg_name="myTimer", run_on_startup=True,
               use_monitor=False) 
 async def ScheduledScraper(myTimer: func.TimerRequest) -> None:
     """
