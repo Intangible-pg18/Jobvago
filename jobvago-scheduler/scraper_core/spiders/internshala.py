@@ -2,9 +2,9 @@ import asyncio
 from typing import AsyncGenerator
 from playwright.async_api import Browser, Page, TimeoutError as PlaywrightTimeoutError
 
-from jobvago_scraper.core import ScraperStrategy
-from jobvago_scraper.models import JobItem
-from jobvago_scraper.config import SITES_CONFIG
+from scraper_core.core import ScraperStrategy
+from scraper_core.models import JobItem
+from scraper_core.config import SITES_CONFIG
 
 class InternshalaScraper(ScraperStrategy):
     """A self-sufficient scraper for Internshala."""

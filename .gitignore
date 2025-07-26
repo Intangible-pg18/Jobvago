@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.python_packages
 
 # Python Virtual Environment
 .venv/
@@ -43,3 +44,4 @@ local.settings.json
 *.user
 *.userosscache
 *.sln.docstates
+

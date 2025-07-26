@@ -6,6 +6,14 @@
         "isEnabled": true,
         "excludedTypes": "Request"
       }
+    },
+    "console": {
+      "isEnabled": true
+    },
+    "logLevel": {
+      "default": "Information",
+      "Host.Results": "Information",
+      "Function": "Information"
     }
   },
   "extensionBundle": {
