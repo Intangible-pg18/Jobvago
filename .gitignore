@@ -45,3 +45,6 @@ local.settings.json
 *.userosscache
 *.sln.docstates
 
+#Extras
+*storage__
+*Azurite*
