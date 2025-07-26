@@ -1,0 +1,25 @@
+# Azure Functions Core
+azure-functions==1.23.0
+azure-functions-worker>=1.0.0
+
+# Azure Services - matching your existing scraper versions
+azure-servicebus==7.14.2
+azure-identity==1.23.1
+azure-core==1.35.0
+# Web scraping dependencies - matching your existing versions
+playwright==1.54.0
+asyncio-throttle
+
+# Data handling - matching your existing versions  
+pydantic==2.11.7
+pydantic_core==2.33.2
+python-dotenv==1.1.1
+
+# Shared dependencies from your scraper
+requests==2.32.4
+beautifulsoup4
+lxml
+
+# Additional dependencies for async support
+aiohttp==3.12.14
+typing_extensions==4.14.1
