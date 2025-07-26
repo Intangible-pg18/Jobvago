@@ -3,7 +3,7 @@ SITES_CONFIG = {
         "internshala": {
             "scraper_class_name": "InternshalaScraper",
             "module_path": "scraper_core.spiders.internshala",
-            "safety_page_limit": 500,
+            "safety_page_limit": 10,
         }
     }
 SERVICE_BUS_CONFIG = {
