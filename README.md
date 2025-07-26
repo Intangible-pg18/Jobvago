@@ -1,13 +1,3 @@
-Of course. It has been a fantastic journey building this project with you. The real value is not just in the final code, but in the thought process, the trade-offs, and the architectural decisions made along the way.
-
-Here is an ultra-detailed design document, formatted as a GitHub `README.md` file. It chronicles our entire journey and explains the "why" behind every decision. This is the story of how `Jobvago` evolved from a simple script into a robust, cloud-native application.
-
----
-
-Copy everything from the line below and paste it into the `README.md` file in the root of your `Jobvago` GitHub repository.
-
----
-
 # 🚀 Jobvago - A Cloud-Native Job Aggregation Platform
 
 Jobvago is a fully automated, event-driven, and serverless application built on Microsoft Azure that scrapes job postings from multiple sources, processes them, and serves them via a clean REST API. It's a demonstration of modern backend architecture, designed for scalability, resilience, and security.
@@ -22,51 +12,48 @@ The entire system is designed around a decoupled, event-driven philosophy. No co
 
 ```mermaid
 graph TD
-    subgraph "Scheduler (Azure Function)"
-        A[🕒 Timer Trigger]
+    subgraph "Automation & Scheduling"
+        A["Azure Function (Timer Trigger)"]
     end
 
-    subgraph "Scraping Engine"
-        B(🐍 Python Scraper)
+    subgraph "Data Ingestion (Python)"
+        B["Python Scraper Engine (Playwright)"]
     end
 
-    subgraph "Messaging (Azure Service Bus)"
-        C{✉️ new-jobs-queue}
+    subgraph "Messaging (Decoupling Layer)"
+        C["Azure Service Bus (Queue)"]
     end
 
-    subgraph "Processor (Azure Function)"
-        D[⚙️ C# Processor]
+    subgraph "Data Processing (C#)"
+        D["Azure Function (Service Bus Trigger)"]
     end
 
-    subgraph "Data Tier"
-        E[📀 Azure SQL DB]
-        F[⚡ Azure Cache for Redis]
+    subgraph "Data Persistence & Caching"
+        E["Azure SQL Database (Serverless)"]
+        F["Azure Cache for Redis"]
     end
 
-    subgraph "API (Azure App Service)"
-        G[🚀 .NET 8 API]
+    subgraph "Data Serving"
+        G[" .NET 8 API (Azure App Service)"]
+        H["End User / Client"]
     end
 
     subgraph "Security"
-        H[🛡️ Azure Key Vault]
+        I["Azure Key Vault (Secrets)"]
     end
 
-    U[👤 User/Client]
-
-    A -- "Triggers every 6 hours" --> B
-    B -- "Yields Job Items" --> C
-    C -- "Triggers function" --> D
-    D -- "Reads/Writes" --> E
-    U -- "HTTP GET /api/jobs" --> G
-    G -- "Checks cache first" --> F
-    F -- "Cache Miss" --> G
-    G -- "Queries data" --> E
-    E -- "Returns data" --> G
-    F -- "Returns cached data" --> G
-    G -- "Returns JSON" --> U
-    
-    G -- "Reads secrets from" --> H
-    D -- "Reads secrets from" --> H
+    A -- "Triggers Scrape" --> B
+    B -- "Sends Raw Job (JSON)" --> C
+    C -- "Triggers Processor" --> D
+    D -- "Reads Message From" --> C
+    D -- "Upserts Clean Data" --> E
+    G -- "Queries Data" --> E
+    G -- "Caches Results" --> F
+    G -- "Checks Cache First" --> F
+    H -- "HTTP Request" --> G
+    G -- "HTTP Response (JSON)" --> H
+    G -- "Loads Secrets From" --> I
+    D -- "Loads Secrets From" --> I
 ```
 
 ---
@@ -214,8 +201,9 @@ No project is ever truly finished. Here are the next logical steps to enhance `J
 
 *   **Implement CI/CD:** Create GitHub Actions workflows to fully automate the testing and deployment of all three components (API, Processor, Scheduler).
 *   **Add More Scrapers:** Leverage the extensible factory pattern to add scrapers for other sites like LinkedIn, Naukri, etc.
-*   **Build a Frontend:** Create a modern Single-Page Application (SPA) using a framework like React or Vue.js to consume the API and provide a user interface.
-*   **Advanced Error Handling:** Implement a **Dead-Letter Queue (DLQ)** for the Service Bus. If the processor function fails to process a message multiple times, the message is automatically moved to the DLQ for manual inspection, ensuring no data is lost due to bugs.
+*   **User Account Management:** Embed User Account Management allowing them to create profiles, upload resumes,
+setup push notifications for new jobs etc.
+*   **AI Integration:** AI (with RAG capabilities) can analyse resume, give ATS scores to them, shortlist most compatable jobs for the user etc.
 *   **Containerization:** Dockerize the applications and explore deploying them to Azure Container Apps or Azure Kubernetes Service (AKS) for even greater scalability and portability.
 
 ---
