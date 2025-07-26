@@ -48,3 +48,6 @@ local.settings.json
 #Extras
 *storage__
 *Azurite*
+
+Publish
+*.zip
