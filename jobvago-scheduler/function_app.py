@@ -39,12 +39,11 @@ except ImportError as e:
 
 app = func.FunctionApp()
 
-@app.timer_trigger(schedule="0 0 */12 * * *", arg_name="myTimer", run_on_startup=True,
-              use_monitor=False) 
+@app.timer_trigger(schedule="0 0 */12 * * *", arg_name="myTimer", run_on_startup=True, use_monitor=False) 
 async def ScheduledScraper(myTimer: func.TimerRequest) -> None:
     """
-    Timer-triggered Azure Function that runs every 6 hours to scrape job sites.
-    Schedule: "0 0 */6 * * *" means at minute 0, hour 0, every 6 hours, every day
+    Timer-triggered Azure Function that runs every 12 hours to scrape job sites.
+    Schedule: "0 0 */12 * * *" means at minute 0, hour 0, every 12 hours, every day
     run_on_startup=True allows testing without waiting for the schedule
     """
     utc_timestamp = datetime.utcnow().replace(tzinfo=None).isoformat()
