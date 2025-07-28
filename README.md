@@ -10,7 +10,7 @@ Jobvago is a fully automated, event-driven, and serverless application built on 
 
 The entire system is designed around a decoupled, event-driven philosophy. No component talks directly to the next; instead, they communicate through a central message queue. This ensures that if one part of the system fails or slows down, the others are not affected.
 
-![Architecture Diagram](.Jobvago.drawio.svg)
+![Architecture Diagram](./Jobvago.drawio.svg)
 
 ---
 
