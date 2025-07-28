@@ -2,7 +2,7 @@
 
 Jobvago is a fully automated, event-driven, and serverless application built on Microsoft Azure that scrapes job postings from multiple sources, processes them, and serves them via a clean REST API. It's a demonstration of modern backend architecture, designed for scalability, resilience, and security.
 
-![C#](https://img.shields.io/badge/c%23-%23239120.svg?style=for-the-badge&logo=c-sharp&logoColor=white)![.NET](https://img.shields.io/badge/.NET-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)![Microsoft Azure](https://img.shields.io/badge/Microsoft%20Azure-0078D4?style=for-the-badge&logo=microsoft-azure&logoColor=white)![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)![SQL Server](https://img.shields.io/badge/SQL%20Server-CC2927?style=for-the-badge&logo=microsoft%20sql%20server&logoColor=white)![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)
+![C#](https://img.shields.io/badge/c%23-%23239120.svg?style=for-the-badge&logo=c-sharp&logoColor=white)![.NET](https://img.shields.io/badge/.NET-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)![Azure](https://img.shields.io/badge/azure-%230072C6.svg?style=for-the-badge&logo=microsoftazure&logoColor=white)![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)
 
 ---
 
@@ -10,53 +10,7 @@ Jobvago is a fully automated, event-driven, and serverless application built on 
 
 The entire system is designed around a decoupled, event-driven philosophy. No component talks directly to the next; instead, they communicate through a central message queue. This ensures that if one part of the system fails or slows down, the others are not affected.
 
-```mermaid
-graph TD
-    subgraph "Automation & Scheduling"
-        A["Azure Container App (Job)"]
-    end
-
-    subgraph "Data Ingestion (Python)"
-        B["Python Scraper Engine (Playwright in Docker)"]
-    end
-
-    subgraph "Messaging (Decoupling Layer)"
-        C["Azure Service Bus (Queue)"]
-    end
-
-    subgraph "Data Processing (C#)"
-        D["Azure Function (Service Bus Trigger)"]
-    end
-
-
-
-    subgraph "Data Persistence & Caching"
-        E["Azure SQL Database (Serverless)"]
-        F["Azure Cache for Redis"]
-    end
-
-    subgraph "Data Serving"
-        G[" .NET 8 API (Azure App Service)"]
-        H["End User / Client"]
-    end
-
-    subgraph "Security"
-        I["Azure Key Vault (Secrets)"]
-    end
-
-    A -- "Triggers Scrape on CRON Schedule" --> B
-    B -- "Sends Raw Job (JSON)" --> C
-    C -- "Triggers Processor" --> D
-    D -- "Reads Message From" --> C
-    D -- "Upserts Clean Data" --> E
-    G -- "Queries Data" --> E
-    G -- "Caches Results" --> F
-    G -- "Checks Cache First" --> F
-    H -- "HTTP Request" --> G
-    G -- "HTTP Response (JSON)" --> H
-    G -- "Loads Secrets From" --> I
-    D -- "Loads Secrets From" --> I
-```
+![Architecture Diagram](.Jobvago.drawio.svg)
 
 ---
 
@@ -209,7 +163,309 @@ No project is ever truly finished. Here are the next logical steps to enhance `J
 *   **Containerize All Services:** Migrate the remaining services (.NET API, Processor) to Docker containers and deploy them to Azure Container Apps for a unified, portable, and highly scalable architecture.
 
 ---
+## 🔀 Alternate Design Choices & Trade-offs
 
-## 💻 Running Locally
+Every architectural decision in Jobvago involved careful consideration of multiple alternatives. This section provides a comprehensive analysis of alternative approaches for each major architectural decision point, demonstrating the depth of thought behind the current design while helping others understand the trade-offs involved in modern system architecture.
 
-*(Instructions on how to set up and run the API, Scraper, and Processor on a local machine would go here.)*
+### 1. Scheduling & Orchestration Architecture
+
+#### **Current Choice: Azure Container Apps Job (CRON-based)**
+
+**Current Implementation:**
+- Docker container running Python scraper on CRON schedule
+- Azure Container Apps Job for serverless execution
+- Schedule-driven batch processing
+
+**Alternative 1: Kubernetes CronJobs + AKS**
+
+**Description:** Deploy scrapers as Kubernetes CronJobs on Azure Kubernetes Service, using Helm charts for configuration management and kubectl for deployment.
+
+**Architectural Changes Required:**
+- Set up AKS cluster with node pools
+- Create Kubernetes CronJob manifests
+- Implement Helm charts for deployment
+- Add cluster monitoring and logging
+- Configure RBAC and network policies
+
+**Pros:**
+- Industry-standard container orchestration
+- Advanced scheduling capabilities (timezone support, multiple schedules)
+- Excellent horizontal scaling and resource management
+- Built-in job history and cleanup policies
+- Cloud-agnostic portability
+- Superior resource utilization across multiple workloads
+- Advanced networking and security controls
+
+**Cons:**
+- Significant operational overhead and complexity
+- Always-on cluster costs even when no jobs are running
+- Requires Kubernetes expertise for management
+- More complex troubleshooting and debugging
+- Overkill for simple scheduled tasks
+- Higher minimum infrastructure costs
+- Steeper learning curve for team members
+
+**When Preferred:** When running dozens of different scheduled jobs, need advanced scheduling features, require multi-cloud portability, or already have Kubernetes expertise in the team.
+
+**Implementation Complexity:** High (requires cluster management, networking, security configuration)
+**Performance:** Excellent for complex workloads, overhead for simple tasks
+**Cost:** Higher baseline cost due to always-on cluster
+**Scalability:** Excellent for multiple diverse workloads
+
+**Alternative 2: Azure Data Factory (ETL Pipeline)**
+
+**Description:** Use Azure Data Factory pipelines with custom activities for web scraping, leveraging its scheduling and monitoring capabilities.
+
+**Architectural Changes Required:**
+- Create ADF instance and linked services
+- Develop custom activities for scraping logic
+- Design pipeline with control flow activities
+- Implement datasets and data flows
+- Set up integration runtime for execution
+
+**Pros:**
+- Purpose-built for data integration pipelines
+- Rich monitoring and alerting capabilities
+- Built-in data movement and transformation
+- Visual pipeline designer
+- Excellent for complex ETL scenarios
+- Strong data lineage tracking
+
+**Cons:**
+- Overkill for simple web scraping
+- Limited support for complex custom logic
+- Higher learning curve for scraping use cases
+- More expensive than simple alternatives
+- Not designed for browser automation
+- Complex setup for simple scenarios
+
+**When Preferred:** When scraping is part of larger ETL processes, need extensive data transformation, or require sophisticated pipeline monitoring.
+
+**Implementation Complexity:** Medium to High (designed for data scenarios)
+**Performance:** Excellent for data pipelines, overhead for simple scraping
+**Cost:** Higher for simple use cases
+**Scalability:** Excellent for data processing workloads
+
+### 2. Data Processing Architecture
+
+#### **Current Choice: Event-Driven Azure Functions with Service Bus Triggers**
+
+**Current Implementation:**
+- C# Azure Functions triggered by Service Bus messages
+- Asynchronous message processing
+- Individual message handling with transactions
+- .NET Isolated Worker Model
+
+**Alternative 1: Apache Kafka Streaming Architecture**
+
+**Description:** Replace Azure Service Bus with Apache Kafka for high-throughput event streaming, using Kafka Streams for real-time data processing.
+
+**Architectural Changes Required:**
+- Set up Kafka cluster (using Confluent Cloud or self-managed)
+- Implement Kafka producers in scraper components
+- Create Kafka consumers for data processing
+- Design event schemas using Avro or Protobuf
+- Implement stream processing topologies
+- Add monitoring with Kafka tools
+
+**Pros:**
+- Extremely high throughput (millions of messages/second)
+- Built-in replication and fault tolerance
+- Strong ordering guarantees within partitions
+- Excellent for real-time analytics and streaming
+- Event sourcing capabilities with log compaction
+- Rich ecosystem of connectors and tools
+- Horizontal scalability
+
+**Cons:**
+- Significant operational overhead and complexity
+- Requires Kafka expertise for proper configuration
+- Overkill for simple queue scenarios
+- More expensive than simple messaging solutions
+- Complex topic and partition management
+- Steeper learning curve
+- Requires careful capacity planning
+
+**When Preferred:** For high-volume real-time processing, when building data streaming platforms, or need event sourcing capabilities.
+
+**Implementation Complexity:** Very High (Kafka cluster management and streaming concepts)
+**Performance:** Excellent for high-volume streaming
+**Cost:** Higher operational costs for small workloads
+**Scalability:** Excellent for large-scale streaming
+
+**Alternative 2: Batch Processing with Scheduled Jobs**
+
+**Description:** Replace real-time processing with periodic batch processing, collecting scraped data and processing in scheduled intervals.
+
+**Architectural Changes Required:**
+- Implement data staging area (blob storage or database)
+- Create batch processing jobs (Azure Batch or similar)
+- Design data partitioning and processing windows
+- Implement checkpoint and restart mechanisms
+- Add batch monitoring and alerting
+
+**Pros:**
+- More predictable resource usage and costs
+- Better for large dataset processing
+- Easier error handling and recovery
+- More efficient resource utilization
+- Better suited for complex analytics
+- Simpler debugging and monitoring
+
+**Cons:**
+- Higher latency for data availability
+- Less responsive to demand changes
+- Risk of data buildup during failures
+- Fixed processing schedule may not match data arrival
+- Potential for larger failure blast radius
+- Users see stale data between batch runs
+
+**When Preferred:** When real-time processing isn't required, dealing with large datasets, or when processing costs need to be optimized.
+
+**Implementation Complexity:** Medium (batch job design and scheduling)
+**Performance:** Excellent for large batches, poor for real-time needs
+**Cost:** Lower overall costs, better resource utilization
+**Scalability:** Excellent for large dataset processing
+
+### 3. API Architecture & Communication Patterns
+
+#### **Current Choice: REST API with ASP.NET Core**
+
+**Current Implementation:**
+- RESTful endpoints using HTTP verbs
+- JSON request/response format
+- Stateless communication
+- Standard HTTP status codes
+
+**Alternative 1: Event-Driven API with WebSockets**
+
+**Description:** Implement real-time API using WebSockets for bidirectional communication, allowing server to push updates to clients immediately.
+
+**Architectural Changes Required:**
+- Implement WebSocket server with SignalR or similar
+- Design event-based API contracts
+- Add connection management and scaling
+- Implement authentication for persistent connections
+- Create event routing and subscription management
+- Add fallback mechanisms for connection failures
+
+**Pros:**
+- Real-time data updates without polling
+- Lower latency for time-sensitive data
+- Reduced server load from polling
+- Better user experience for dynamic data
+- Bidirectional communication capabilities
+- Lower bandwidth usage for frequent updates
+- Natural fit for collaborative features
+
+**Cons:**
+- More complex client-side state management
+- Connection management and scaling challenges
+- Harder to cache and CDN deployment
+- More complex load balancing
+- Debugging real-time issues is challenging
+- Browser compatibility considerations
+- Higher server resource usage for persistent connections
+
+**When Preferred:** Real-time job alerts, collaborative features, or when data freshness is critical.
+
+**Implementation Complexity:** High (connection management and scaling)
+**Performance:** Excellent for real-time scenarios
+**Cost:** Higher server resources for persistent connections
+**Scalability:** Challenging due to persistent connections
+
+### 4. Caching Strategy & Architecture
+
+#### **Current Choice: Redis Cache-Aside Pattern**
+
+**Current Implementation:**
+- External Redis cache for API responses
+- Manual cache management in application code
+- TTL-based expiration
+- Cache-aside (lazy loading) pattern
+
+**Alternative 1: CDN-Based Caching with Edge Locations**
+
+**Description:** Use Azure CDN or Cloudflare for geographic distribution of cached API responses, with cache invalidation strategies.
+
+**Architectural Changes Required:**
+- Configure CDN with API endpoint caching rules
+- Implement cache headers and TTL strategies
+- Add cache invalidation triggers on data updates
+- Design cache key strategies for different endpoints
+- Implement geo-based cache optimization
+- Add CDN monitoring and analytics
+
+**Pros:**
+- Global edge locations reduce latency worldwide
+- Massive scale and automatic load handling
+- Reduced bandwidth costs for origin servers
+- Built-in DDoS protection and security features
+- Improved user experience across geographies
+- Reduced origin server load
+- Cost-effective for high-traffic APIs
+
+**Cons:**
+- Cache invalidation delays across edge locations
+- Limited control over cache behavior
+- Not suitable for personalized or user-specific data
+- Debugging cache issues across multiple locations
+- Additional cost for CDN services
+- Complexity in cache purging strategies
+- Limited to cacheable content types
+
+**When Preferred:** Global user base, high-traffic public APIs, static or semi-static data, or when geographic performance is critical.
+
+**Implementation Complexity:** Medium (CDN configuration and invalidation)
+**Performance:** Excellent for global users
+**Cost:** CDN costs offset by reduced origin load
+**Scalability:** Excellent global scalability
+
+### 5. Authentication & Security Architecture
+
+#### **Current Choice: Azure Key Vault + Managed Identity**
+
+**Current Implementation:**
+- Passwordless authentication using Azure Managed Identity
+- Centralized secret management in Azure Key Vault
+- Role-based access control (RBAC)
+- No embedded credentials in code
+
+**Alternative 1: OAuth 2.0 + JWT Token-Based Authentication**
+
+**Description:** Implement OAuth 2.0 authorization server with JWT tokens for stateless authentication, supporting multiple grant types and scopes.
+
+**Architectural Changes Required:**
+- Set up OAuth 2.0 authorization server (IdentityServer or Azure AD)
+- Implement JWT token validation middleware
+- Design scope and claims-based authorization
+- Add token refresh and revocation mechanisms
+- Implement client registration and management
+- Create user consent and authorization flows
+
+**Pros:**
+- Industry-standard authentication protocol
+- Stateless tokens reduce server-side session management
+- Fine-grained access control with scopes
+- Support for multiple client types (web, mobile, APIs)
+- Token-based approach scales well
+- Interoperability with third-party services
+- Support for federated identity scenarios
+
+**Cons:**
+- More complex implementation and management
+- Token lifecycle management challenges
+- Security concerns with token storage and transmission
+- Requires secure token storage on clients
+- Complex debugging of authentication flows
+- Potential for token leakage or misuse
+- Higher development and operational complexity
+
+**When Preferred:** Multi-tenant applications, mobile/SPA clients, third-party integrations, or when fine-grained authorization is needed.
+
+**Implementation Complexity:** High (OAuth flows and token management)
+**Performance:** Good for stateless scenarios
+**Cost:** Higher development complexity
+**Scalability:** Excellent for distributed systems
+
+---
