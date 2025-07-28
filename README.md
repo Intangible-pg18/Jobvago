@@ -2,7 +2,7 @@
 
 Jobvago is a fully automated, event-driven, and serverless application built on Microsoft Azure that scrapes job postings from multiple sources, processes them, and serves them via a clean REST API. It's a demonstration of modern backend architecture, designed for scalability, resilience, and security.
 
-![C#](https://img.shields.io/badge/c%23-%23239120.svg?style=for-the-badge&logo=c-sharp&logoColor=white)![.NET](https://img.shields.io/badge/.NET-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)![Microsoft Azure](https://img.shields.io/badge/Microsoft%20Azure-0078D4?style=for-the-badge&logo=microsoft-azure&logoColor=white)![SQL Server](https://img.shields.io/badge/SQL%20Server-CC2927?style=for-the-badge&logo=microsoft%20sql%20server&logoColor=white)![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)
+![C#](https://img.shields.io/badge/c%23-%23239120.svg?style=for-the-badge&logo=c-sharp&logoColor=white)![.NET](https://img.shields.io/badge/.NET-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)![Microsoft Azure](https://img.shields.io/badge/Microsoft%20Azure-0078D4?style=for-the-badge&logo=microsoft-azure&logoColor=white)![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)![SQL Server](https://img.shields.io/badge/SQL%20Server-CC2927?style=for-the-badge&logo=microsoft%20sql%20server&logoColor=white)![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)
 
 ---
 
@@ -13,11 +13,11 @@ The entire system is designed around a decoupled, event-driven philosophy. No co
 ```mermaid
 graph TD
     subgraph "Automation & Scheduling"
-        A["Azure Function (Timer Trigger)"]
+        A["Azure Container App (Job)"]
     end
 
     subgraph "Data Ingestion (Python)"
-        B["Python Scraper Engine (Playwright)"]
+        B["Python Scraper Engine (Playwright in Docker)"]
     end
 
     subgraph "Messaging (Decoupling Layer)"
@@ -27,6 +27,8 @@ graph TD
     subgraph "Data Processing (C#)"
         D["Azure Function (Service Bus Trigger)"]
     end
+
+
 
     subgraph "Data Persistence & Caching"
         E["Azure SQL Database (Serverless)"]
@@ -42,7 +44,7 @@ graph TD
         I["Azure Key Vault (Secrets)"]
     end
 
-    A -- "Triggers Scrape" --> B
+    A -- "Triggers Scrape on CRON Schedule" --> B
     B -- "Sends Raw Job (JSON)" --> C
     C -- "Triggers Processor" --> D
     D -- "Reads Message From" --> C
@@ -61,9 +63,9 @@ graph TD
 ## 🔧 Technology Stack
 
 *   **Cloud Platform:** Microsoft Azure
-*   **Backend API:** C# with .NET 8 (Minimal API) on Azure App Service
+*   **Backend API:** C# with .NET 8 on Azure App Service
 *   **Data Processing:** C# Azure Functions (.NET Isolated Worker Model)
-*   **Scraping & Scheduling:** Python Azure Functions
+*   **Scraping & Scheduling:** Python script in a **Docker** container, run by a scheduled **Azure Container App Job**.
 *   **Database:** Azure SQL Database (Serverless Tier)
 *   **Messaging:** Azure Service Bus (Queue)
 *   **Caching:** Azure Cache for Redis
@@ -82,21 +84,22 @@ Each component was designed with specific principles in mind.
 
 This component kicks off the entire process.
 
-*   **Implementation:** A Python Azure Function with a **Timer Trigger**.
-*   **Design Decision:** Why a Timer Trigger Function?
-    *   **Serverless & Cost-Effective:** A dedicated VM to run a CRON job would be expensive and wasteful. An Azure Function with a Timer Trigger costs nothing when idle and only incurs costs for the few minutes the scraper is actually running.
-    *   **Reliability:** It's a fully managed service with guaranteed execution, unlike a CRON job on a personal machine that could be turned off.
-*   **Configuration:** The schedule is defined by a CRON expression (`0 0 */6 * * *`), meaning "at minute 0 of every 6th hour". This is easily configurable without changing code.
+*   **Implementation:** A **scheduled Azure Container App Job** that runs a Docker container on a CRON schedule.
+*   **Design Decision: The Evolution from Azure Functions to Container Apps**
+    *   **Initial Choice:** We began with a Python Azure Function on a Timer Trigger. This is ideal for simple, lightweight scheduled tasks due to its serverless nature and low cost.
+    *   **The Problem:** The scraping engine requires Playwright and a full browser engine (Chromium), which are large, complex dependencies. The standard Azure Functions environment, especially on the Consumption plan, has limitations on package size and startup time. This resulted in repeated deployment and runtime failures—the environment was too constrained for our specific needs.
+    *   **The Solution:** We migrated to Azure Container Apps. This approach allows us to define the *exact* runtime environment using a `Dockerfile`. We build an image that includes Python, all `pip` packages, **and the Playwright browser dependencies**. The Container App Job simply runs this pre-built, guaranteed-to-work container.
+    *   **The Benefit:** This gives us the best of both worlds: the complete environmental control of a dedicated server, but with the cost-effective, serverless model of paying only for the time the job is running. It is the modern, robust solution for running containerized, scheduled tasks in Azure.
 
-### 2. The Scraper Engine (`src/` in scheduler)
+### 2. The Scraper Engine (`run_scraper.py`)
 
-This is the core data collection engine.
+This is the core data collection engine running inside the container.
 
 *   **Design Decision:** Why Playwright over Scrapy?
     *   **Trade-off:** Scrapy is incredibly fast for crawling simple, static HTML. However, modern websites (like Naukri.com) are dynamic web applications that heavily rely on JavaScript to load content.
     *   **Choice:** Playwright was chosen because it automates a real browser engine (Chromium). This allows it to handle complex JavaScript, deal with pop-ups, and interact with the page like a real user, making it far more robust and capable for the modern web, at the cost of being slightly slower than a pure HTTP-based crawler.
 *   **Design Decision:** The **Strategy & Factory Patterns**.
-    *   Initially, the `run.py` script was hardcoded for Internshala. This was brittle.
+    *   Initially, the main script was hardcoded for one site. This was brittle.
     *   We refactored this by defining a `ScraperStrategy` abstract base class (the "contract"). Each scraper (`InternshalaScraper`) is a concrete implementation of this strategy.
     *   A `scraper_factory` function was created to dynamically load and instantiate the correct scraper based on a configuration file. This makes the system **extensible**. To add a new site, we simply create a new scraper class and update the config; the orchestrator code doesn't change.
 *   **Design Decision:** Self-Sufficient Scrapers (The `discover_jobs` Refactor).
@@ -201,10 +204,9 @@ No project is ever truly finished. Here are the next logical steps to enhance `J
 
 *   **Implement CI/CD:** Create GitHub Actions workflows to fully automate the testing and deployment of all three components (API, Processor, Scheduler).
 *   **Add More Scrapers:** Leverage the extensible factory pattern to add scrapers for other sites like LinkedIn, Naukri, etc.
-*   **User Account Management:** Embed User Account Management allowing them to create profiles, upload resumes,
-setup push notifications for new jobs etc.
+*   **User Account Management:** Embed User Account Management allowing them to create profiles, upload resumes, setup push notifications for new jobs etc.
 *   **AI Integration:** AI (with RAG capabilities) can analyse resume, give ATS scores to them, shortlist most compatable jobs for the user etc.
-*   **Containerization:** Dockerize the applications and explore deploying them to Azure Container Apps or Azure Kubernetes Service (AKS) for even greater scalability and portability.
+*   **Containerize All Services:** Migrate the remaining services (.NET API, Processor) to Docker containers and deploy them to Azure Container Apps for a unified, portable, and highly scalable architecture.
 
 ---
 
