@@ -10,7 +10,7 @@ Jobvago is a fully automated, event-driven, and serverless application built on 
 
 The entire system is designed around a decoupled, event-driven philosophy. No component talks directly to the next; instead, they communicate through a central message queue. This ensures that if one part of the system fails or slows down, the others are not affected.
 
-![Architecture Diagram](./Jobvago.drawio.svg)
+![Architecture Diagram](./assets/Jobvago.drawio.svg)
 
 ---
 
@@ -70,9 +70,6 @@ This is the architectural lynchpin of the entire system.
     *   **Resilience:** If the processor function or the database is down for maintenance, messages simply pile up safely in the queue. Once the downstream systems are back online, they process the backlog. **No data is lost.**
     *   **Load Leveling:** If the scrapers find 50,000 jobs in a 5-minute burst, they can all be rapidly sent to the queue. The processor function can then consume them at a steady, manageable pace, preventing the database from being overwhelmed.
 
-#### Screenshot of Service Bus Queue
-`[YOUR-SCREENSHOT-HERE - A picture of the 'new-jobs-queue' in the Azure Portal, showing some active messages if possible]`
-
 ### 4. The Data Processor (`jobvago-processor`)
 
 This is the "assembly station" that ensures data quality.
@@ -95,9 +92,6 @@ This is our structured "warehouse."
     *   **Cost-Effectiveness:** For a project with intermittent workloads like ours, the serverless tier is perfect. It can automatically scale down to zero and **auto-pause** when not in use, dramatically reducing costs.
 *   **Schema Design:** The schema is highly **normalized** to reduce data redundancy and improve integrity (The DRY Principle - Don't Repeat Yourself). We use lookup tables (`Companies`, `Locations`, `Skills`) and linking tables (`JobLocations`, `JobSkills`) to model many-to-many relationships efficiently.
 *   **Performance:** Non-clustered indexes were explicitly created on foreign key columns (`CompanyID`, `SourceID`, etc.) to dramatically speed up query performance as the `Jobs` table grows.
-
-#### Screenshot of Database Schema
-`[YOUR-SCREENSHOT-HERE - A picture from VS Code or Azure Data Studio showing the database tables and their relationships]`
 
 ### 6. The API Layer (`jobvago-api`)
 
@@ -124,9 +118,6 @@ Handling secrets is one of the most critical aspects of professional software de
     *   We create an **Access Policy** in Key Vault that grants this Managed Identity permission to read secrets.
     *   The application code uses the `DefaultAzureCredential()` library, which automatically authenticates using its Managed Identity. The result is a **passwordless architecture**. The code contains no secrets, the configuration contains no secrets, and authentication is handled securely and automatically by the Azure platform.
 
-#### Screenshot of Key Vault
-`[YOUR-SCREENSHOT-HERE - A picture of your Azure Key Vault homepage]`
-
 ---
 
 ## ⚡ Performance: Caching with Redis
@@ -141,14 +132,11 @@ To ensure the API is fast and responsive, and to reduce load on the database, a 
 
 This dramatically improves performance for frequently accessed data and enhances the scalability of the application.
 
-#### Screenshot of Redis Cache
-`[YOUR-SCREENSHOT-HERE - A picture of your Azure Cache for Redis homepage]`
-
 ---
 
 ## ☁️ Final Deployed Azure Resources
 
-`[YOUR-SCREENSHOT-HERE - A picture of your 'Jobvago-RG' Resource Group in the Azure Portal, showing the list of all created services: App Service, Function Apps, SQL Server, Service Bus, Redis, Key Vault, etc.]`
+![Deployed Azure Resources](./assets/deployed-resources.png)
 
 ---
 
