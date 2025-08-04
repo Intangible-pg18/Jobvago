@@ -12,8 +12,6 @@ class InternshalaScraper(ScraperStrategy):
     def __init__(self):
         super().__init__(site_name="internshala")
         
-        # The scraper now knows its own configuration and properties directly.
-        # It no longer relies on the config file for its URL template.
         self.config = SITES_CONFIG[self.site_name]
         self.base_url_template = "https://internshala.com/jobs/page-{page_number}" 
         self.safety_limit = self.config.get("safety_page_limit", 500) # Use .get() for safety
