@@ -51,7 +51,6 @@ namespace Jobvago.Processor
 
             _logger.LogInformation("Processing job: '{JobTitle}' from '{Company}'", rawJob.Title, rawJob.CompanyName);
             
-            // Check for duplicates first (no transaction needed)
             var existingJob = await _context.Jobs
                 .AsNoTracking()
                 .FirstOrDefaultAsync(j => j.OriginalUrl == rawJob.OriginalUrl);
@@ -63,7 +62,6 @@ namespace Jobvago.Processor
                 return;
             }
 
-            // Process the entire job with a single transaction
             await ProcessJobAsync(rawJob);
         }
 
@@ -71,10 +69,8 @@ namespace Jobvago.Processor
         {
             try
             {
-                // Clear tracking before fetching the job
                 _context.ChangeTracker.Clear();
                 
-                // Get the job and update it
                 var job = await _context.Jobs.FindAsync(jobId);
                 if (job != null)
                 {
@@ -90,19 +86,15 @@ namespace Jobvago.Processor
 
         private async Task ProcessJobAsync(JobItemDto rawJob)
         {
-            // Clear any tracked entities
             _context.ChangeTracker.Clear();
             
-            // Use the execution strategy for retries
             var strategy = _context.Database.CreateExecutionStrategy();
             
             await strategy.ExecuteAsync(async () =>
             {
-                // One transaction for the entire operation
                 using var transaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    // Double-check for duplicates inside transaction
                     var existingJob = await _context.Jobs
                         .FirstOrDefaultAsync(j => j.OriginalUrl == rawJob.OriginalUrl);
                     
@@ -114,25 +106,21 @@ namespace Jobvago.Processor
                         await transaction.CommitAsync();
                         return;
                     }
-
-                    // Get or create company - no separate transaction
+                    
                     var company = await GetOrCreateReferenceEntityAsync<Company>(
                         _context.Companies,
                         c => c.Name == rawJob.CompanyName,
                         () => new Company { Name = rawJob.CompanyName }
                     );
 
-                    // Get or create source - no separate transaction
                     var source = await GetOrCreateReferenceEntityAsync<Source>(
                         _context.Sources,
                         s => s.Name == rawJob.Source,
                         () => new Source { Name = rawJob.Source }
                     );
 
-                    // Parse salary
                     var (minSalary, maxSalary, currency) = ParseSalaryDetails(rawJob.RawSalaryText, rawJob.Source);
 
-                    // Create the job
                     var newJob = new Job
                     {
                         JobTitle = rawJob.Title,
@@ -148,9 +136,8 @@ namespace Jobvago.Processor
                     };
 
                     _context.Jobs.Add(newJob);
-                    await _context.SaveChangesAsync();  // Save to get newJob.ID
+                    await _context.SaveChangesAsync();
 
-                    // Process locations
                     if (!string.IsNullOrWhiteSpace(rawJob.Location))
                     {
                         var locationNames = rawJob.Location
@@ -164,7 +151,6 @@ namespace Jobvago.Processor
                                 continue;
                             }
 
-                            // Get or create location - no separate transaction
                             var location = await GetOrCreateReferenceEntityAsync<Location>(
                                 _context.Locations,
                                 l => l.Name == name,
@@ -178,7 +164,6 @@ namespace Jobvago.Processor
                             });
                         }
                         
-                        // Save all location associations and IsRemote flag if needed
                         await _context.SaveChangesAsync();
                     }
 
@@ -199,14 +184,12 @@ namespace Jobvago.Processor
             System.Linq.Expressions.Expression<Func<T, bool>> predicate,
             Func<T> entityFactory) where T : class
         {
-            // First check if entity exists
             var entity = await dbSet.FirstOrDefaultAsync(predicate);
             if (entity != null)
             {
                 return entity;
             }
 
-            // Create new entity
             try
             {
                 entity = entityFactory();
@@ -218,7 +201,6 @@ namespace Jobvago.Processor
             {
                 _logger.LogWarning("Race detected creating {0} - fetching existing entity", typeof(T).Name);
                 
-                // Detach the entity that failed to insert
                 foreach (var entry in _context.ChangeTracker.Entries<T>().ToList())
                 {
                     if (entry.State == EntityState.Added)
@@ -227,7 +209,6 @@ namespace Jobvago.Processor
                     }
                 }
                 
-                // Get the real entity that was inserted by another process
                 return await dbSet.FirstAsync(predicate);
             }
         }
